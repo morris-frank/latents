@@ -12,9 +12,9 @@ def load_song(name: str):
     ).sort_values("cue")
 
 
-def prepare_result_folder():
+def prepare_result_folder(name):
     i = 0
-    while (results_path := Path(f"./results/movie_{i:03d}")).exists():
+    while (results_path := Path(f"./results/{name}_{i:03d}")).exists():
         i += 1
     results_path.mkdir()
     (results_path / "samples").mkdir()
@@ -22,15 +22,16 @@ def prepare_result_folder():
 
 
 def main(cfg):
-    prepare_result_folder()
+    song = load_song(cfg.song)
 
+    prepare_result_folder(cfg.song)
     walker = SleepWalker(width=cfg.width, height=cfg.height, device=cfg.device)
-    walker.generate_keyframes(cfg.song, fps=cfg.sample_fps)
+    walker.generate_keyframes(song, fps=cfg.sample_fps)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument(dest="song", type=load_song, help="name of song")
+    parser.add_argument(dest="song", type=str, help="name of song")
     parser.add_argument("-sample_fps", type=int, default=15)
     parser.add_argument("-device", type=str, required=True)
     parser.add_argument("-width", type=int, default=512)

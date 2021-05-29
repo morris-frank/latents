@@ -195,10 +195,10 @@ class SleepWalker:
 
         total_length = int(song.iloc[-1].cue) + 1
         n_frames = int(total_length * fps)
-        Line = namedtuple("Line", ["text", "emb", "marker"])
+        Line = namedtuple("Line", ["text", "marker"])
         lines = []
         for l in song.itertuples():
-            lines.append(Line(l.line, self.encode_text(l.line), int(l.cue * fps)))
+            lines.append(Line(l.line, int(l.cue * fps)))
 
         left, right = None, None
         for frame in range(n_frames):
@@ -212,10 +212,12 @@ class SleepWalker:
                     break
 
             progress = (frame - left.marker) / (right.marker - left.marker)
-            self.pos_piv = (1.0 - progress) * left.emb + progress * right.emb
+
+            left_emb, right_emb = self.encode_text(left.text), self.encode_text(right.text)
+            self.pos_piv = (1.0 - progress) * left_emb + progress * right_emb
             self.pos_piv = self.pos_piv / self.pos_piv.norm(dim=-1, keepdim=True)
 
-            self.neg_piv = progress * left.emb + neg_emb
+            self.neg_piv = progress * left_emb + neg_emb
             self.neg_piv = self.neg_piv / self.neg_piv.norm(dim=-1, keepdim=True)
 
             print(
