@@ -17,7 +17,6 @@ def prepare_result_folder(name):
     while (results_path := Path(f"./results/{name}_{i:03d}")).exists():
         i += 1
     results_path.mkdir()
-    (results_path / "samples").mkdir()
     os.chdir(results_path)
 
 
