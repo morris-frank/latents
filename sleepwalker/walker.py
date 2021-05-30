@@ -14,11 +14,10 @@ from torch.nn import functional as F
 import torchvision
 from pathlib import Path
 
+from . import MODEL_DIR
+
 console = get_console()
 print = console.print
-
-
-DATA_DIR = Path("~/data/").expanduser()
 
 
 def load_perceptor(device):
@@ -28,24 +27,15 @@ def load_perceptor(device):
     return perceptor
 
 
-def _load_vqgan(config, ckpt_path=None) -> VQModel:
-    model = VQModel(**config.model.params)
-    if ckpt_path is not None:
-        sd = torch.load(ckpt_path, map_location="cpu")["state_dict"]
-        # NOTE: Whats up with this line:??
-        missing, unexpected = model.load_state_dict(sd, strict=False)
-    return model.eval()
-
-
 def load_vqgan() -> VQModel:
-    config16384 = OmegaConf.load(
-        DATA_DIR / "vqgan_imagenet_f16_16384/configs/model.yaml"
-    )
-    model16384 = _load_vqgan(
-        config16384,
-        ckpt_path=DATA_DIR / "vqgan_imagenet_f16_16384/checkpoints/last.ckpt",
-    )
-    return model16384
+    config = OmegaConf.load(MODEL_DIR / "vqgan/model.yaml")
+    ckpt_path= MODEL_DIR / "vqgan/last.ckpt"
+
+    model = VQModel(**config.model.params)
+    sd = torch.load(ckpt_path, map_location="cpu")["state_dict"]
+    # NOTE: Whats up with this line:??
+    missing, unexpected = model.load_state_dict(sd, strict=False)
+    return model.eval()
 
 
 class LatentPivot(torch.nn.Module):
