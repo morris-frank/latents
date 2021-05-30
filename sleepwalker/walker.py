@@ -28,8 +28,8 @@ def load_perceptor(device):
 
 
 def load_vqgan() -> VQModel:
-    config = OmegaConf.load(MODEL_DIR / "vqgan/model.yaml")
-    ckpt_path= MODEL_DIR / "vqgan/last.ckpt"
+    config = OmegaConf.load(MODEL_DIR / "model.yaml")
+    ckpt_path= MODEL_DIR / "last.ckpt"
 
     model = VQModel(**config.model.params)
     sd = torch.load(ckpt_path, map_location="cpu")["state_dict"]
