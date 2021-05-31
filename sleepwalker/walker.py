@@ -1,5 +1,4 @@
 import random
-from collections import namedtuple
 from itertools import product
 from pathlib import Path
 
@@ -7,7 +6,7 @@ import clip
 import pandas as pd
 import torch
 import torchvision
-from numpy import product
+import numpy as np
 from omegaconf import OmegaConf
 from rich import get_console
 from taming.models.vqgan import VQModel
@@ -106,7 +105,7 @@ class SleepWalker:
 
     def text2embedding(self, text: str) -> Tensor:
         text = clip.tokenize(text).to(self.device)
-        return self.perceptor.encode_text(text).detach().clone()
+        return self.perceptor.encode_text(text).detach().clone().cpu()
 
     def image2embedding(self, x: Tensor) -> Tensor:
         return self.perceptor.encode_image(x)
@@ -190,51 +189,63 @@ class SleepWalker:
         latents = self.pivot()
         if save_lats:
             torch.save(latents.cpu(), f"{path}.p")
-        self.checkin()
+        self.checkin(latents, path)
 
     def generate_keyframes(
-        self, song: pd.DataFrame, fps: int, iter_per_frame: int = 100
+        self, song: pd.DataFrame, fps: int, iter_per_frame: int = 100, warm_up_factor: float = 3
     ):
         self.reset()
         neg_txt = "disconnected, confusing, incoherent"
-        neg_emb = self.text2embedding(neg_txt)
+        neg_emb = self.text2embedding(neg_txt).to(self.device)
 
-        total_length = int(song.iloc[-1].cue) + 1
-        n_frames = int(total_length * fps)
-        Line = namedtuple("Line", ["text", "marker"])
-        lines = []
-        for l in song.itertuples():
-            lines.append(Line(l.line, int(l.cue * fps)))
+        song["embedding"] = song.line.apply(self.text2embedding)
 
-        left, right = None, None
-        for frame in range(n_frames):
+        assigs = []
+        starting = True
+        for win in song.rolling(3, center=True):
+            cues = win.cue.tolist()
+            indx = win.index.tolist()
+            _i = len(win) == 2
+            win_size = int((cues[2-_i] - cues[1-_i]) * fps)
+            if _i:
+                if starting:
+                    indx.insert(0, None)
+                    starting = False
+                else:
+                    indx.append(None)
+            for i in range(win_size):
+                assigs.append((indx, i/win_size))
+
+        for frame, ((i_left, i_mid, i_right), progress) in enumerate(assigs):
             name = f"{frame:05d}"
+            left, mid, right = None, song.loc[i_mid], None
+            if i_left is not None:
+                left = song.loc[i_left]
+            if i_right is not None:
+                right = song.loc[i_right]
 
-            for line in lines:
-                if line.marker == frame:
-                    left = line
-                if line.marker > frame:
-                    right = line
-                    break
-
-            if right.marker == left.marker:
-                progress = 1.
-            else:
-                progress = (frame - left.marker) / (right.marker - left.marker)
-
-            left_emb, right_emb = self.text2embedding(left.text), self.text2embedding(
-                right.text
-            )
-            self.pos_piv = (1.0 - progress) * left_emb + progress * right_emb
+            self.pos_piv = mid.embedding.to(self.device)
+            if right is not None:
+                right_amount = np.clip(progress - 0.5, 0, 1)
+                self.pos_piv += right_amount * right.embedding.to(self.device)
             self.pos_piv = self.pos_piv / self.pos_piv.norm(dim=-1, keepdim=True)
 
-            self.neg_piv = progress * left_emb + neg_emb
+            self.neg_piv = neg_emb
+            if left is not None:
+                left_amount = np.clip((1-progress)**2, 0, 1)
+                self.neg_piv +=  left_amount * left.embedding.to(self.device)
             self.neg_piv = self.neg_piv / self.neg_piv.norm(dim=-1, keepdim=True)
 
-            print(
-                f"{name}\n\t{1-progress:.3f}  {left.text}\n\t{progress:.3f}  {right.text}"
-            )
-            self.train(name, iter_per_frame)
+            print(name)
+            if left is not None:
+                print(f"{left.line}\t{left_amount}")
+            print(f"{mid.line}\t+1")
+            if right is not None:
+                print(f"{right.line}\t-{right_amount}")
+
+            warm_up = warm_up_factor * (1 - np.sqrt(frame / len(assigs)))
+            iters = int(iter_per_frame + warm_up * iter_per_frame)
+            self.train(name, iters)
 
     @torch.no_grad()
     def interpolate_frames(self, multiplier: int):
