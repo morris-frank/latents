@@ -1,6 +1,6 @@
 #! /bin/sh
 
-mamba install -c conda-forge pytorch-lightning kornia ftfy
+# mamba install -c conda-forge pytorch-lightning kornia ftfy
 
 mkdir lib
 mkdir -p models/vqgan

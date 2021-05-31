@@ -245,4 +245,4 @@ class SleepWalker:
             total=n_frames,
         ):
             emb = (1 - p) * start + p * end
-            self.checkin(emb, self.path["interpolations"] / f"{i:04d}")
+            self.checkin(emb, self.path["interpolations"] / f"{i:06d}")
