@@ -1,18 +1,19 @@
-import clip
-from numpy import product
-from rich import get_console
-import torch
-from omegaconf import OmegaConf
-from taming.models.vqgan import VQModel
-import pandas as pd
-from torch import Tensor
-from collections import namedtuple
 import random
+from collections import namedtuple
 from itertools import product
-from tqdm.contrib import tenumerate
-from torch.nn import functional as F
-import torchvision
 from pathlib import Path
+
+import clip
+import pandas as pd
+import torch
+import torchvision
+from numpy import product
+from omegaconf import OmegaConf
+from rich import get_console
+from taming.models.vqgan import VQModel
+from torch import Tensor
+from torch.nn import functional as F
+from tqdm.contrib import tenumerate
 
 from . import MODEL_DIR
 

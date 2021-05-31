@@ -1,7 +1,8 @@
 #! /usr/bin/env python
-from argparse import ArgumentParser
-from sleepwalker import SleepWalker
 import os
+from argparse import ArgumentParser
+
+from sleepwalker import SleepWalker
 
 
 def main(cfg):

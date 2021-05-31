@@ -1,9 +1,11 @@
 #! /usr/bin/env python
-from argparse import ArgumentParser
-from sleepwalker import SleepWalker
-from pathlib import Path
 import os
+from argparse import ArgumentParser
+from pathlib import Path
+
 import pandas as pd
+
+from sleepwalker import SleepWalker
 
 
 def load_song(name: str):
