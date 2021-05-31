@@ -18,10 +18,10 @@ def main(cfg):
         shell=True,
     )
 
-    song_path = Path(f"../../songs/{cfg.folder.split('_')[0]}.mp3")
+    song_path = Path(f"../../songs/{'_'.join(cfg.folder.split('_')[:-1])}.mp3")
     if song_path.exists():
         call(
-            "ffmpeg -i {cfg.folder}.mp4 -i {song_path} -c:a aac {cfg.folder}_with_audio.mp4",
+            f"ffmpeg -i {cfg.folder}.mp4 -i {song_path} -c:a aac {cfg.folder}_with_audio.mp4",
             shell=True,
         )
     else:

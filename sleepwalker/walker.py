@@ -216,7 +216,10 @@ class SleepWalker:
                     right = line
                     break
 
-            progress = (frame - left.marker) / (right.marker - left.marker)
+            if right.marker == left.marker:
+                progress = 1.
+            else:
+                progress = (frame - left.marker) / (right.marker - left.marker)
 
             left_emb, right_emb = self.text2embedding(left.text), self.text2embedding(
                 right.text
