@@ -200,7 +200,8 @@ class SleepWalker:
         neg_txt = "disconnected, confusing, incoherent"
         neg_emb = self.text2embedding(neg_txt).to(self.device)
 
-        song["embedding"] = song.line.apply(self.text2embedding)
+        song["prompt"] = song.line + " unreal enigne"
+        song["embedding"] = song.prompt.apply(self.text2embedding)
 
         assigs = []
         starting = True
