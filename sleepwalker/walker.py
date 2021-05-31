@@ -12,7 +12,8 @@ from rich import get_console
 from taming.models.vqgan import VQModel
 from torch import Tensor
 from torch.nn import functional as F
-from tqdm.contrib import tenumerate
+from scipy import stats
+from tqdm import tqdm
 
 from . import MODEL_DIR
 
@@ -170,7 +171,7 @@ class SleepWalker:
     def train(self, basename: str, n_steps: int):
         for i in range(n_steps):
             loss = self.train_step()
-            if i % 20 == 0:
+            if i % 100 == 0:
                 for g in self.optimizer.param_groups:
                     print(
                         f"step={i:05d}, loss={loss.item():.3e}, lr={g['lr']}, decay={g['weight_decay']}"
@@ -189,10 +190,11 @@ class SleepWalker:
         latents = self.pivot()
         if save_lats:
             torch.save(latents.cpu(), f"{path}.p")
-        self.checkin(latents, path)
+        else:
+            self.checkin(latents, path)
 
     def generate_keyframes(
-        self, song: pd.DataFrame, fps: int, iter_per_frame: int = 100, warm_up_factor: float = 3
+        self, song: pd.DataFrame, fps: int, iter_per_frame: int = 100, warm_up_factor: float = 2
     ):
         self.reset()
         neg_txt = "disconnected, confusing, incoherent"
@@ -250,11 +252,8 @@ class SleepWalker:
     @torch.no_grad()
     def interpolate_frames(self, multiplier: int):
         paths = list(map(torch.load, sorted(self.path["keyframes"].glob("*.p"))))
-        n_frames = (len(paths) - 1) * multiplier
-        # TODO: Interpolation not linearly
-        for i, ((start, end), p) in tenumerate(
-            product(zip(paths[:-1], paths[1:]), torch.linspace(0, 1, multiplier)),
-            total=n_frames,
-        ):
-            emb = (1 - p) * start + p * end
-            self.checkin(emb, self.path["interpolations"] / f"{i:06d}")
+        i = 0
+        for start, end in tqdm(zip(paths[:-1], paths[1:]), total=len(paths)):
+            for sample in stats.norm.ppf(np.linspace(stats.norm.cdf(start), stats.norm.cdf(end), multiplier + 1))[:multiplier]:
+                self.checkin(Tensor(sample), self.path["interpolations"] / f"{i:06d}")
+                i += 1
