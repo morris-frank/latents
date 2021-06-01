@@ -23,9 +23,13 @@ def prepare_result_folder(name):
 
 
 def main(cfg):
-    song = load_song(cfg.song)
+    if cfg.cont:
+        song = load_song("_".join(cfg.song.split("_")[:-1]))
+        os.chdir(f"./results/{cfg.song}")
+    else:
+        song = load_song(cfg.song)
+        prepare_result_folder(cfg.song)
 
-    prepare_result_folder(cfg.song)
     walker = SleepWalker(width=cfg.width, height=cfg.height, device=cfg.device)
     walker.generate_keyframes(song, fps=cfg.sample_fps)
 
@@ -37,4 +41,5 @@ if __name__ == "__main__":
     parser.add_argument("-device", type=str, required=True)
     parser.add_argument("-width", type=int, default=512)
     parser.add_argument("-height", type=int, default=512)
+    parser.add_argument("-c", action="store_true", dest="cont")
     main(parser.parse_args())

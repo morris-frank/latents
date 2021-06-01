@@ -221,6 +221,12 @@ class SleepWalker:
 
         for frame, ((i_left, i_mid, i_right), progress) in enumerate(assigs):
             name = f"{frame:05d}"
+            print(name)
+
+            if (keyframe := self.path["keyframes"] / f"{name}.p").exists():
+                latent = torch.load(keyframe)
+                self.pivot.normu.data = latent.to(self.device)
+                continue
             left, mid, right = None, song.loc[i_mid], None
             if i_left is not None:
                 left = song.loc[i_left]
@@ -239,7 +245,6 @@ class SleepWalker:
                 self.neg_piv +=  left_amount * left.embedding.to(self.device)
             self.neg_piv = self.neg_piv / self.neg_piv.norm(dim=-1, keepdim=True)
 
-            print(name)
             if left is not None:
                 print(f"{left.line}\t{left_amount}")
             print(f"{mid.line}\t+1")
