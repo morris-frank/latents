@@ -42,13 +42,13 @@ def load_vqgan() -> VQModel:
 class LatentPivot(torch.nn.Module):
     def __init__(self, width, height, batch_size=1):
         super().__init__()
-        self.normu = (
+        self.weights = (
             0.5 * torch.randn(batch_size, 256, width // 16, height // 16).cuda()
         )
-        self.normu = torch.nn.Parameter(torch.sinh(1.9 * torch.arcsinh(self.normu)))
+        self.weights = torch.nn.Parameter(torch.sinh(1.9 * torch.arcsinh(self.weights)))
 
     def forward(self):
-        return self.normu.clip(-6, 6)
+        return self.weights.clip(-6, 6)
 
 
 class SleepWalker:
@@ -92,7 +92,7 @@ class SleepWalker:
             self.device
         )
         self.optimizer = torch.optim.AdamW(
-            [{"params": [self.pivot.normu], "lr": self.lr}],
+            [{"params": [self.pivot.weights], "lr": self.lr}],
             weight_decay=self.weight_decay,
         )
 
@@ -100,9 +100,19 @@ class SleepWalker:
     def clip_image(tensor: Tensor) -> Tensor:
         return (tensor.clip(-1, 1) + 1) / 2
 
+    @torch.no_grad()
+    def img2latent(self, img: str) -> Tensor:
+        img = torchvision.io.read_image(f"../../anchors/{img}")/255
+        img = self.normalization(img)
+        tr = torchvision.transforms.Resize((512, 512))
+        img = tr(img)
+        img = img[None, ...].to(self.device)
+        return self.vqgan.encode(img)[0]
+
     def latent2img(self, latents: Tensor) -> Tensor:
-        quantized_embedding = self.vqgan.post_quant_conv(latents)
-        return self.vqgan.decoder(quantized_embedding)
+        return self.vqgan.decode(latents)
+        # quantized_embedding = self.vqgan.post_quant_conv(latents)
+        # return self.vqgan.decoder(quantized_embedding)
 
     def text2embedding(self, text: str) -> Tensor:
         text = clip.tokenize(text).to(self.device)
@@ -152,6 +162,10 @@ class SleepWalker:
         neg_loss = 5 * torch.cosine_similarity(
             self.neg_piv, image_semantic_embedding, -1
         )
+
+        if self.pos_img_piv is not None:
+            pos_loss += torch.cosine_similarity(self.pos_img_piv, self.pivot()).mean()
+
         return pos_loss + neg_loss
 
     def train_step(self) -> Tensor:
@@ -194,14 +208,28 @@ class SleepWalker:
             self.checkin(latents, path)
 
     def generate_keyframes(
-        self, song: pd.DataFrame, fps: int, iter_per_frame: int = 100, warm_up_factor: float = 2
+        self,
+        song: pd.DataFrame,
+        fps: int,
+        iter_per_frame: int = 100,
+        warm_up_factor: float = 1.1,
+        neg_text_anchor: str = "disconnected, confusing, incoherent",
+        pos_text_anchor: str = None,
+        neg_img_anchor: str = None,
+        pos_img_anchor: str = None,
     ):
         self.reset()
-        neg_txt = "disconnected, confusing, incoherent"
-        neg_emb = self.text2embedding(neg_txt).to(self.device)
+        if neg_text_anchor is not None:
+            neg_anchor = self.text2embedding(neg_text_anchor).to(self.device)
+        
+        if pos_text_anchor is not None:
+            pos_anchor = self.text2embedding(pos_text_anchor).to(self.device)
 
-        song["prompt"] = song.line + " unreal enigne"
-        song["embedding"] = song.prompt.apply(self.text2embedding)
+        self.pos_img_piv = None
+        if pos_img_anchor is not None:
+            self.pos_img_piv = self.img2latent(pos_img_anchor)
+
+        song["embedding"] = song.line.apply(self.text2embedding)
 
         assigs = []
         starting = True
@@ -225,8 +253,9 @@ class SleepWalker:
 
             if (keyframe := self.path["keyframes"] / f"{name}.p").exists():
                 latent = torch.load(keyframe)
-                self.pivot.normu.data = latent.to(self.device)
+                self.pivot.weights.data = latent.to(self.device)
                 continue
+
             left, mid, right = None, song.loc[i_mid], None
             if i_left is not None:
                 left = song.loc[i_left]
@@ -234,22 +263,16 @@ class SleepWalker:
                 right = song.loc[i_right]
 
             self.pos_piv = mid.embedding.to(self.device)
-            if right is not None:
-                right_amount = np.clip(progress - 0.5, 0, 1)
-                self.pos_piv += right_amount * right.embedding.to(self.device)
+            if pos_text_anchor is not None:
+                self.pos_piv += pos_anchor
+            if right is not None and progress >= 0.8:
+                self.pos_piv += right.embedding.to(self.device)
             self.pos_piv = self.pos_piv / self.pos_piv.norm(dim=-1, keepdim=True)
 
-            self.neg_piv = neg_emb
-            if left is not None:
-                left_amount = np.clip((1-progress)**2, 0, 1)
-                self.neg_piv +=  left_amount * left.embedding.to(self.device)
+            self.neg_piv = neg_anchor
+            if left is not None and progress <= 0.2:
+                self.neg_piv += left.embedding.to(self.device)
             self.neg_piv = self.neg_piv / self.neg_piv.norm(dim=-1, keepdim=True)
-
-            if left is not None:
-                print(f"{left.line}\t{left_amount}")
-            print(f"{mid.line}\t+1")
-            if right is not None:
-                print(f"{right.line}\t-{right_amount}")
 
             warm_up = warm_up_factor * (1 - np.sqrt(frame / len(assigs)))
             iters = int(iter_per_frame + warm_up * iter_per_frame)
