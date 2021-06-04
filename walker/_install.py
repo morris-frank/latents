@@ -4,7 +4,7 @@ from pathlib import Path
 from subprocess import call
 from typing import Dict
 
-from rich import pretty, traceback
+from rich import get_console, pretty, traceback
 from tqdm import tqdm
 
 libs = {
@@ -16,6 +16,10 @@ ckpts = {
     "last.ckpt": "https://heibox.uni-heidelberg.de/f/867b05fc8c4841768640/?dl=1",
     "model.yaml": "https://heibox.uni-heidelberg.de/f/274fb24ed38341bfa753/?dl=1",
 }
+
+console = get_console()
+print = console.print
+rule = console.rule
 
 
 def wget(source: str, target: Path) -> None:

@@ -1,17 +1,14 @@
+from itertools import product
 from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
-from pandas.core.algorithms import isin
 import torch
-from itertools import product
-from rich import get_console
 from torch import Tensor
 
+from . import print, rule
 from .generator import Generator
 from .perceptor import Perceptor
-
-console = get_console()
-print = console.print
 
 
 class Pivot(torch.nn.Module):
@@ -116,11 +113,11 @@ class Sampler:
         self.build_loss_targets()
 
         for i in range(n_steps):
-            loss = self.step()
+            loss = self.step().item()
             if i % 500 == 0:
                 for g in self.optimizer.param_groups:
                     print(
-                        f"step={i:05d}, loss={loss.item():.3e}, lr={g['lr']}, decay={g['weight_decay']}"
+                        f"step={i:05d}, loss={loss:.3e}, lr={g['lr']}, decay={g['weight_decay']}"
                     )
                 self.imsave(f"samples/{img_name}_{i:04d}")
         self.imsave(f"keyframes/{img_name}", save_embed=True)
@@ -136,7 +133,7 @@ class Sampler:
             if not continuous:
                 self.reset()
             name = f"{index:05d}"
-            print(name)
+            rule(name)
 
             self._perception_attractors = [line.line]
             self.train(name, n_steps_per_line)
