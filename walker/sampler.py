@@ -116,26 +116,26 @@ class Sampler:
     def train(self, img_name: str, n_steps: int):
         self.build_loss_targets()
 
-        for i in range(n_steps):
+        for i in range(n_steps + 1):
             loss = self.step().item()
-            if i % 500 == 0:
+            if i % 500 == 0 or i == n_steps:
                 for g in self.optimizer.param_groups:
                     print(
                         f"step={i:05d}, loss={loss:.3e}, lr={g['lr']}, decay={g['weight_decay']}"
                     )
-                self.imsave(f"samples/{img_name}_{i:04d}")
-        self.imsave(f"keyframes/{img_name}", save_embed=True)
+                self.imsave(f"keyframes/{img_name}", save_embed=(i == n_steps))
 
     def generate_keyframes_v4(
         self, script: pd.DataFrame, n_steps_per_line: int, continuous: bool
     ):
-        rule(f"Start sampling {os.getcwd()}")
+        print(f"Start sampling\t{os.getcwd()}")
         self.reset()
         for index, line in script.iterrows():
             if not continuous:
                 self.reset()
             name = f"{index:05d}"
             rule(name)
+            print(f'Text\t "{line.line}"')
 
             self._perception_attractors = [line.line]
             self.train(name, n_steps_per_line)
