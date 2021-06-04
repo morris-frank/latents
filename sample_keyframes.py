@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from walker import Sampler
+from walker import Sampler, print
 
 
 def load_song(name: str):
@@ -30,14 +30,22 @@ def main(cfg):
         song = load_song(cfg.song)
         prepare_result_folder(cfg.song)
 
-    walker = Sampler(width=cfg.width, height=cfg.height, device=cfg.device)
-    walker.generate_keyframes_v3(song, fps=cfg.sample_fps, pos_img_anchor=cfg.img)
+    print(os.getcwd())
+    walker = Sampler(
+        device=cfg.device,
+        width=cfg.width,
+        height=cfg.height,
+        targets={
+            "perception_repeller": "disconnected, confusing, incoherent",
+            "generation_attractor": cfg.img
+        }
+    )
+    walker.generate_keyframes_v4(song)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(dest="song", type=str, help="name of song")
-    parser.add_argument("-sample_fps", type=int, default=15)
     parser.add_argument("-device", type=str, required=True)
     parser.add_argument("-width", type=int, default=512)
     parser.add_argument("-height", type=int, default=512)

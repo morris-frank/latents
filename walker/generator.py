@@ -5,7 +5,7 @@ import torch
 import torchvision
 from omegaconf import OmegaConf
 from taming.models.vqgan import VQModel
-from torch import Module, Tensor
+from torch import Tensor
 from torch.nn import functional as F
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ class Generator:
         self.model = self.load()
 
         self.up_noise = 0.1
-        self.augentations = torch.nn.Sequential(
+        self.augmentations = torch.nn.Sequential(
             torchvision.transforms.RandomHorizontalFlip(),
             torchvision.transforms.RandomAffine(24, (0.1, 0.1), fill=0),
         ).to(self.device)
@@ -29,7 +29,7 @@ class Generator:
             (0.26862954, 0.26130258, 0.27577711),
         ).to(self.device)
 
-    def load(self) -> Module:
+    def load(self) -> VQModel:
         config = OmegaConf.load(CACHE_DIR / "model.yaml")
         model = VQModel(**config.model.params)
         state_dict = torch.load(CACHE_DIR / "last.ckpt", map_location="cpu")[
@@ -39,18 +39,18 @@ class Generator:
         return model.to(self.device).eval()
 
     @torch.no_grad()
-    def img2embed(self, path: str) -> Tensor:
+    def img2embedding(self, path: str) -> Tensor:
         img = torchvision.io.read_image(f"../../anchors/{path}") / 255
         img = self.normalization(img)
         img = torchvision.transforms.Resize((512, 512))(img)
         img = img[None, ...].to(self.device)
         return self.model.encode(img)[0]
 
-    def embed2img(self, embed: Tensor) -> Tensor:
+    def embedding2img(self, embed: Tensor) -> Tensor:
         return self.model.decode(embed)
 
-    def embed2img_augmented(self, embed: Tensor) -> Tensor:
-        image = self.embed2img(embed)
+    def embedding2img_augmented(self, embed: Tensor) -> Tensor:
+        image = self.embedding2img(embed)
         image = self.augment(image)
         return self.normalization(image)
 
@@ -61,7 +61,7 @@ class Generator:
             embed = Tensor(embed)
         if save_embed:
             torch.save(embed.cpu(), f"{path}.p")
-        img = self.embed2img(embed.to(self.device)).cpu()
+        img = self.embedding2img(embed.to(self.device)).cpu()
         torchvision.utils.save_image(img[0, ...], f"{path}.png")
 
     @torch.no_grad()

@@ -1,5 +1,6 @@
 import clip
-from torch import Module, Tensor
+from torch import Tensor
+from torch.nn import Module
 
 
 class Perceptor:
@@ -11,9 +12,9 @@ class Perceptor:
         model, _ = clip.load("ViT-B/32", device=self.device, jit=False)
         return model.eval()
 
-    def txt2embed(self, text: str) -> Tensor:
+    def txt2embedding(self, text: str) -> Tensor:
         text = clip.tokenize(text).to(self.device)
         return self.model.encode_text(text).detach().clone().cpu()
 
-    def img2embed(self, x: Tensor) -> Tensor:
+    def img2embedding(self, x: Tensor) -> Tensor:
         return self.model.encode_image(x)
