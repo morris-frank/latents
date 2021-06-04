@@ -2,12 +2,12 @@
 import os
 from argparse import ArgumentParser
 
-from sleepwalker import SleepWalker
+from walker.generator import Generator
 
 
 def main(cfg):
     os.chdir(f"./results/{cfg.folder}")
-    walker = SleepWalker(None, None, cfg.device, only_decode=True)
+    walker = Generator(None, None, cfg.device)
     walker.interpolate_frames(cfg.multiplier)
 
 

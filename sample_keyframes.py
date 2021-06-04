@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from sleepwalker import SleepWalker
+from walker import Sampler
 
 
 def load_song(name: str):
@@ -30,8 +30,8 @@ def main(cfg):
         song = load_song(cfg.song)
         prepare_result_folder(cfg.song)
 
-    walker = SleepWalker(width=cfg.width, height=cfg.height, device=cfg.device)
-    walker.generate_keyframes(song, fps=cfg.sample_fps, pos_img_anchor=cfg.img)
+    walker = Sampler(width=cfg.width, height=cfg.height, device=cfg.device)
+    walker.generate_keyframes_v3(song, fps=cfg.sample_fps, pos_img_anchor=cfg.img)
 
 
 if __name__ == "__main__":
