@@ -21,7 +21,6 @@ console = get_console()
 print = console.print
 rule = console.rule
 
-
 def wget(source: str, target: Path) -> None:
     with urllib.request.urlopen(source) as source, open(str(target), "wb") as output:
         with tqdm(

@@ -31,7 +31,6 @@ def main(cfg):
         script = load_script(cfg.script)
         prepare_result_folder(cfg.script)
 
-    print(os.getcwd())
     walker = Sampler(
         device=cfg.device,
         width=cfg.width,
@@ -53,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("-img", type=str, help="Image style file to use as an attractor. Loaded from './img/'", default=None)
     parser.add_argument("-txt", type=str, help="String to use as additional embedding attractor in each step.", default=None)
     parser.add_argument("-c", "--continuous", action="store_true", help="Whether to sample continously or restart at each keyframe.", dest="continuous")
-    parser.add_argument("-n", "--n_steps", type=int, help="Number of steps per sampling iterartion.", default=1_000)
+    parser.add_argument("-n", "--n_steps", type=int, help="Number of steps per sampling iterartion.", default=5_000)
 
     parser.add_argument("-width", type=int, default=512)
     parser.add_argument("-height", type=int, default=512)

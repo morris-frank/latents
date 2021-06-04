@@ -1,3 +1,4 @@
+import os
 from itertools import product
 from typing import Any, Dict
 
@@ -47,6 +48,7 @@ class Sampler:
             setattr(self, name, None)
             setattr(self, f"_{name}", targets.get(name, None))
             setattr(self, f"_{name}s", [])
+        rule("Finished set-up Sampler().")
 
     def reset(self):
         self.pivot = Pivot(self.width, self.height, self.batch_size).to(
@@ -128,6 +130,7 @@ class Sampler:
         n_steps_per_line: int,
         continuous: bool
     ):
+        rule(f"Start sampling {os.getcwd()}")
         self.reset()
         for index, line in script.iterrows():
             if not continuous:

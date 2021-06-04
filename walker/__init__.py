@@ -3,6 +3,6 @@
 from ._install import install, print, rule
 
 CACHE_DIR = install()
-rule("Finished set-up.")
+rule("Finished install.")
 
 from .sampler import Sampler, print
