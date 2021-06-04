@@ -128,8 +128,8 @@ class Sampler:
     def generate_keyframes_v4(
         self,
         script: pd.DataFrame,
-        n_steps_per_line: int = 1_000,
-        continuous: bool = False
+        n_steps_per_line: int,
+        continuous: bool
     ):
         self.reset()
         for index, line in script.iterrows():

@@ -42,7 +42,7 @@ def main(cfg):
             "generation_attractor": cfg.img
         }
     )
-    walker.generate_keyframes_v4(script, continuous=cfg.continuous)
+    walker.generate_keyframes_v4(script, continuous=cfg.continuous, n_steps_per_line=cfg.n_steps)
 
 
 if __name__ == "__main__":
@@ -53,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument("-img", type=str, help="Image style file to use as an attractor. Loaded from './img/'", default=None)
     parser.add_argument("-txt", type=str, help="String to use as additional embedding attractor in each step.", default=None)
     parser.add_argument("-c", "--continuous", action="store_true", help="Whether to sample continously or restart at each keyframe.", dest="continuous")
+    parser.add_argument("-n", "--n_steps", type=int, help="Number of steps per sampling iterartion.", default=1_000)
 
     parser.add_argument("-width", type=int, default=512)
     parser.add_argument("-height", type=int, default=512)
