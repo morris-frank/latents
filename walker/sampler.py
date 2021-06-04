@@ -18,21 +18,25 @@ class Pivot(torch.nn.Module):
         self.embedding = (
             0.5 * torch.randn(batch_size, 256, width // 16, height // 16).cuda()
         )
-        self.embedding = torch.nn.Parameter(torch.sinh(1.9 * torch.arcsinh(self.embedding)))
+        self.embedding = torch.nn.Parameter(
+            torch.sinh(1.9 * torch.arcsinh(self.embedding))
+        )
 
     def forward(self):
         return self.embedding.clip(-6, 6)
 
 
 class Sampler:
-    target_names = list(map('_'.join, product(("generation", "perception"), ("attractor", "repeller"))))
+    target_names = list(
+        map("_".join, product(("generation", "perception"), ("attractor", "repeller")))
+    )
 
     def __init__(
         self,
         device: str,
         width: int = 512,
         height: int = 512,
-        targets: Dict[str, Any] = {}
+        targets: Dict[str, Any] = {},
     ) -> None:
         self.width, self.height = width, height
         self.device = device
@@ -51,9 +55,7 @@ class Sampler:
         rule("Finished set-up Sampler().")
 
     def reset(self):
-        self.pivot = Pivot(self.width, self.height, self.batch_size).to(
-            self.device
-        )
+        self.pivot = Pivot(self.width, self.height, self.batch_size).to(self.device)
         self.optimizer = torch.optim.AdamW(
             [{"params": [self.pivot.embedding], "lr": self.lr}],
             weight_decay=self.weight_decay,
@@ -79,7 +81,7 @@ class Sampler:
                 comb = sum([self.embed(embedding, name) for embedding in embeddings])
                 setattr(self, name, comb / comb.norm(dim=-1, keepdim=True))
             else:
-                setattr(self, name, None)        
+                setattr(self, name, None)
 
     def imsave(self, path: str, **kwargs):
         self.generator.imsave(self.pivot(), path, **kwargs)
@@ -88,18 +90,18 @@ class Sampler:
         image_at_pivot = self.generator.embedding2img_augmented(self.pivot())
         perception_at_pivot = self.perceptor.img2embedding(image_at_pivot)
 
-        loss = 0
-        if self.perception_attractor is not None:
-            loss -= 10 * torch.cosine_similarity(self.perception_attractor, perception_at_pivot).mean()
+        def _loss_element(target, preds, factor):
+            if target is not None:
+                return factor * torch.cosine_similarity(target, preds).mean()
+            else:
+                return 0
 
-        if self.perception_repeller is not None:
-            loss += 5 * torch.cosine_similarity(self.perception_repeller, perception_at_pivot).mean()
-
-        if self.generation_attractor is not None:
-            loss -= 10 * torch.cosine_similarity(self.generation_attractor, self.pivot()).mean()
-
-        if self.generation_repeller is not None:
-            loss += 1 * torch.cosine_similarity(self.generation_repeller, self.pivot()).mean()
+        loss = (
+            _loss_element(self.perception_attractor, perception_at_pivot, -10)
+            + _loss_element(self.perception_repeller, perception_at_pivot, +5)
+            + _loss_element(self.generation_attractor, self.pivot(), -10)
+            + _loss_element(self.generation_repeller, self.pivot(), +1)
+        )
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -125,10 +127,7 @@ class Sampler:
         self.imsave(f"keyframes/{img_name}", save_embed=True)
 
     def generate_keyframes_v4(
-        self,
-        script: pd.DataFrame,
-        n_steps_per_line: int,
-        continuous: bool
+        self, script: pd.DataFrame, n_steps_per_line: int, continuous: bool
     ):
         rule(f"Start sampling {os.getcwd()}")
         self.reset()
@@ -157,7 +156,7 @@ class Sampler:
             cues = win.cue.tolist()
             indx = win.index.tolist()
             _i = len(win) == 2
-            win_size = int((cues[2-_i] - cues[1-_i]) * fps)
+            win_size = int((cues[2 - _i] - cues[1 - _i]) * fps)
             if _i:
                 if starting:
                     indx.insert(0, None)
@@ -165,7 +164,7 @@ class Sampler:
                 else:
                     indx.append(None)
             for i in range(win_size):
-                assigs.append((indx, i/win_size))
+                assigs.append((indx, i / win_size))
 
         for frame, ((i_left, i_mid, i_right), progress) in enumerate(assigs):
             name = f"{frame:05d}"

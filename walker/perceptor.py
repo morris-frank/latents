@@ -1,6 +1,5 @@
 import clip
 from torch import Tensor
-from torch.nn import Module
 
 
 class Perceptor:
@@ -8,7 +7,7 @@ class Perceptor:
         self.device = device
         self.model = self.load()
 
-    def load(self) -> Module:
+    def load(self) -> clip.model.CLIP:
         model, _ = clip.load("ViT-B/32", device=self.device, jit=False)
         return model.eval()
 

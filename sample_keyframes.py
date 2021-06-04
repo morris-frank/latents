@@ -3,15 +3,8 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-import pandas as pd
-
 from walker import Sampler, print
-
-
-def load_script(name: str):
-    return pd.read_csv(
-        f"./scripts/{name}.csv", header=None, names=["line", "cue"]
-    ).sort_values("cue")
+from walker.utils import load_script
 
 
 def prepare_result_folder(name):

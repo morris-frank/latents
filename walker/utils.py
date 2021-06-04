@@ -1,6 +1,7 @@
 from itertools import tee
 
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 
@@ -13,3 +14,9 @@ def pairwise(iterable):
 
 def linspace_gaussian(start, stop, num=50):
     return stats.norm.ppf(np.linspace(stats.norm.cdf(start), stats.norm.cdf(stop), num))
+
+
+def load_script(name: str) -> pd.DataFrame:
+    return pd.read_csv(
+        f"./scripts/{name}.csv", header=None, names=["line", "cue"]
+    ).sort_values("cue")

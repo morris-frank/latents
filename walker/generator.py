@@ -1,16 +1,17 @@
 import random
 from pathlib import Path
 
+import pandas as pd
 import torch
 import torchvision
 from omegaconf import OmegaConf
 from taming.models.vqgan import VQModel
 from torch import Tensor
 from torch.nn import functional as F
-from tqdm import tqdm
+from tqdm import trange
 
 from . import CACHE_DIR
-from .utils import linspace_gaussian, pairwise
+from .utils import linspace_gaussian
 
 
 class Generator:
@@ -65,11 +66,20 @@ class Generator:
         torchvision.utils.save_image(img[0, ...], f"{path}.png")
 
     @torch.no_grad()
-    def interpolate_frames(self, multiplier: int):
+    def render(self, script: pd.DataFrame, fps: int):
+        def _load_frame(idx: int):
+            return torch.load(f"keyframes/{idx:05d}.p")
+
+        script["embedding"] = script.line.apply(_load_frame)
+
         i = 0
-        for start, end in tqdm(pairwise(sorted(self.path["keyframe"].glob("*.p")))):
-            for embed in linspace_gaussian(start, end, multiplier + 1)[:multiplier]:
-                self.imsave(embed, self.path["interpolations"] / f"{i:06d}")
+        for keyframe in trange(len(script) - 1):
+            start, stop = script.loc[keyframe], script.loc[keyframe + 1]
+            n_frames = (stop.cue - start.cue) * fps
+            for embedding in linspace_gaussian(
+                start.embedding, stop.embedding, n_frames
+            ):
+                self.imsave(embedding, f"interpolations/{i:06d}")
                 i += 1
 
     def augment(self, img: Tensor, cutn=32) -> Tensor:
