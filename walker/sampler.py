@@ -117,7 +117,7 @@ class Sampler:
 
         for i in range(n_steps):
             loss = self.step()
-            if i % 100 == 0:
+            if i % 500 == 0:
                 for g in self.optimizer.param_groups:
                     print(
                         f"step={i:05d}, loss={loss.item():.3e}, lr={g['lr']}, decay={g['weight_decay']}"
