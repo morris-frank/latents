@@ -40,7 +40,7 @@ class Generator:
 
     @torch.no_grad()
     def img2embedding(self, path: str) -> Tensor:
-        img = torchvision.io.read_image(f"../../anchors/{path}") / 255
+        img = torchvision.io.read_image(f"../../img/{path}") / 255
         img = self.normalization(img)
         img = torchvision.transforms.Resize((512, 512))(img)
         img = img[None, ...].to(self.device)

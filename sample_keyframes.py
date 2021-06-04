@@ -8,9 +8,9 @@ import pandas as pd
 from walker import Sampler, print
 
 
-def load_song(name: str):
+def load_script(name: str):
     return pd.read_csv(
-        f"./songs/{name}.csv", header=None, names=["line", "cue"]
+        f"./scripts/{name}.csv", header=None, names=["line", "cue"]
     ).sort_values("cue")
 
 
@@ -23,12 +23,13 @@ def prepare_result_folder(name):
 
 
 def main(cfg):
-    if cfg.cont:
-        song = load_song("_".join(cfg.song.split("_")[:-1]))
-        os.chdir(f"./results/{cfg.song}")
+    if (Path("./results") / cfg.script).exists():
+        print("Found results folder exists already, will continue sampling.")
+        script = load_script("_".join(cfg.script.split("_")[:-1]))
+        os.chdir(f"./results/{cfg.script}")
     else:
-        song = load_song(cfg.song)
-        prepare_result_folder(cfg.song)
+        script = load_script(cfg.script)
+        prepare_result_folder(cfg.script)
 
     print(os.getcwd())
     walker = Sampler(
@@ -36,19 +37,23 @@ def main(cfg):
         width=cfg.width,
         height=cfg.height,
         targets={
+            "perception_attractor": cfg.txt,
             "perception_repeller": "disconnected, confusing, incoherent",
             "generation_attractor": cfg.img
         }
     )
-    walker.generate_keyframes_v4(song)
+    walker.generate_keyframes_v4(script, continuous=cfg.continuous)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument(dest="song", type=str, help="name of song")
-    parser.add_argument("-device", type=str, required=True)
+    parser.add_argument(dest="script", type=str, help="Name of the instruction set script to sample according to.", choices=list(map(lambda x: x.stem, Path("./scripts").glob("*csv"))))
+
+    parser.add_argument("-device", type=str, help="Device to work on e.g. \"cuda:1\"", required=True)
+    parser.add_argument("-img", type=str, help="Image style file to use as an attractor. Loaded from './img/'", default=None)
+    parser.add_argument("-txt", type=str, help="String to use as additional embedding attractor in each step.", default=None)
+    parser.add_argument("-c", "--continuous", action="store_true", help="Whether to sample continously or restart at each keyframe.", dest="continuous")
+
     parser.add_argument("-width", type=int, default=512)
     parser.add_argument("-height", type=int, default=512)
-    parser.add_argument("-c", action="store_true", dest="cont")
-    parser.add_argument("-img", type=str, default=None)
     main(parser.parse_args())

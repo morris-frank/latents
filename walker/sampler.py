@@ -97,7 +97,7 @@ class Sampler:
             loss += 5 * torch.cosine_similarity(self.perception_repeller, perception_at_pivot).mean()
 
         if self.generation_attractor is not None:
-            loss -= 1 * torch.cosine_similarity(self.generation_attractor, self.pivot()).mean()
+            loss -= 10 * torch.cosine_similarity(self.generation_attractor, self.pivot()).mean()
 
         if self.generation_repeller is not None:
             loss += 1 * torch.cosine_similarity(self.generation_repeller, self.pivot()).mean()
@@ -129,9 +129,12 @@ class Sampler:
         self,
         script: pd.DataFrame,
         n_steps_per_line: int = 1_000,
+        continuous: bool = False
     ):
         self.reset()
         for index, line in script.iterrows():
+            if not continuous:
+                self.reset()
             name = f"{index:05d}"
             print(name)
 

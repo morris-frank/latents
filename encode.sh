@@ -9,7 +9,7 @@ if [ -d ./results/$1/ ]; then
     ffmpeg -framerate $fps -pattern_type glob -i "interpolations/*.png" -vcodec libx264 -pix_fmt yuv420p -maxrate 8096k -profile:v high -crf 18 $1.mp4
 
     song_name=$(echo $1| rev |cut -d_ -f2-| rev)
-    song_path="../../songs/${song_name}.mp3"
+    song_path="../../scripts/${song_name}.mp3"
     if [ -f $song_path ]; then
         echo "Found song"
         mv $1.mp4 tmp.mp4
