@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 import torch
-from torch import Tensor
 from rich import get_console
+from torch import Tensor
 
-from .perceptor import Perceptor
 from .generator import Generator
+from .perceptor import Perceptor
 
 console = get_console()
 print = console.print

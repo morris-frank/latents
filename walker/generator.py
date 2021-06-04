@@ -1,22 +1,19 @@
-from pathlib import Path
 import random
-from numpy.lib.arraysetops import isin
+from pathlib import Path
 
 import torch
-from torch.serialization import save
 import torchvision
 from omegaconf import OmegaConf
 from taming.models.vqgan import VQModel
-from tqdm import tqdm
 from torch import Module, Tensor
 from torch.nn import functional as F
+from tqdm import tqdm
 
 from . import CACHE_DIR
-from .utils import pairwise, linspace_gaussian
+from .utils import linspace_gaussian, pairwise
 
 
-
-class Generator():
+class Generator:
     def __init__(self, width: int, height: int, device: str) -> None:
         self.width, self.height = width, height
         self.device = device
@@ -35,7 +32,9 @@ class Generator():
     def load(self) -> Module:
         config = OmegaConf.load(CACHE_DIR / "model.yaml")
         model = VQModel(**config.model.params)
-        state_dict = torch.load(CACHE_DIR / "last.ckpt", map_location="cpu")["state_dict"]
+        state_dict = torch.load(CACHE_DIR / "last.ckpt", map_location="cpu")[
+            "state_dict"
+        ]
         _, _ = model.load_state_dict(state_dict, strict=False)
         return model.to(self.device).eval()
 

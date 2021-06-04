@@ -2,7 +2,7 @@ import clip
 from torch import Module, Tensor
 
 
-class Perceptor():
+class Perceptor:
     def __init__(self, device: str) -> None:
         self.device = device
         self.model = self.load()
