@@ -1,5 +1,6 @@
 import random
 from pathlib import Path
+import numpy as np
 
 import pandas as pd
 import torch
@@ -8,7 +9,7 @@ from omegaconf import OmegaConf
 from taming.models.vqgan import VQModel
 from torch import Tensor
 from torch.nn import functional as F
-from tqdm import trange
+from tqdm import trange, tqdm
 
 from . import CACHE_DIR
 from .utils import linspace_gaussian
@@ -70,15 +71,15 @@ class Generator:
         def _load_frame(idx: int):
             return torch.load(f"keyframes/{idx:05d}.p")
 
-        script["embedding"] = script.line.apply(_load_frame)
+        script["embedding"] = script.index.to_series().apply(_load_frame)
 
         i = 0
         for keyframe in trange(len(script) - 1):
             start, stop = script.loc[keyframe], script.loc[keyframe + 1]
-            n_frames = (stop.cue - start.cue) * fps
-            for embedding in linspace_gaussian(
+            n_frames = int((stop.cue - start.cue) * fps)
+            for embedding in tqdm(np.linspace(
                 start.embedding, stop.embedding, n_frames
-            ):
+            ), leave=False):
                 self.imsave(embedding, f"interpolations/{i:06d}")
                 i += 1
 
