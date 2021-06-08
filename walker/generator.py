@@ -12,7 +12,7 @@ from torch.nn import functional as F
 from tqdm import trange, tqdm
 
 from . import CACHE_DIR
-from .utils import linspace_gaussian
+from .utils import linspace_gaussian, spline, band_limited_noise
 
 
 class Generator:
@@ -73,13 +73,20 @@ class Generator:
 
         script["embedding"] = script.index.to_series().apply(_load_frame)
 
+        k_embedding = script["embedding"].iloc[0].shape[1]
+        N_frames = int(script["cue"].iloc[-1] * fps)
+        noise = 250 * np.array([band_limited_noise(0., 0.01, N_frames) for _ in range(k_embedding)]).T[:, None, :]
+
         i = 0
         for keyframe in trange(len(script) - 1):
             start, stop = script.loc[keyframe], script.loc[keyframe + 1]
+            start_frame = int(start.cue * fps)
             n_frames = int((stop.cue - start.cue) * fps)
-            for embedding in tqdm(np.linspace(
-                start.embedding, stop.embedding, n_frames
-            ), leave=False):
+
+            frames = spline(start.embedding, stop.embedding, n_frames, 0.5)
+            _noise = noise[start_frame:start_frame+n_frames, ...]
+            noised_frames = (frames.T + _noise.T).T.clip(-6, 6)
+            for embedding in tqdm(noised_frames, leave=False):
                 self.imsave(embedding, f"interpolations/{i:06d}")
                 i += 1
 
