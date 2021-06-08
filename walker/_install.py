@@ -1,16 +1,10 @@
 import sys
 import urllib.request
 from pathlib import Path
-from subprocess import call
 from typing import Dict
 
 from rich import get_console, pretty, traceback
 from tqdm import tqdm
-
-libs = {
-    "clip": "https://github.com/openai/CLIP.git",
-    "taming-transformer": "https://github.com/CompVis/taming-transformers",
-}
 
 ckpts = {
     "last.ckpt": "https://heibox.uni-heidelberg.de/f/867b05fc8c4841768640/?dl=1",
@@ -37,14 +31,10 @@ def wget(source: str, target: Path) -> None:
                 loop.update(len(buffer))
 
 
-def install_libs(libs: Dict) -> None:
-    lib_dir = Path(__file__).parents[1] / "lib"
-    lib_dir.mkdir(exist_ok=True)
-
-    for lib, url in libs.items():
-        if not (lib_dir / lib).exists():
-            call(f"git clone {url} {lib_dir / lib}", shell=True)
-        sys.path.insert(0, str(lib_dir / lib))
+def update_path() -> None:
+    for path in (Path(__file__).parents[1] / "lib").glob("*"):
+        if path.is_dir():
+            sys.path.insert(0, str(path))
 
 
 def download_ckpts(ckpts: Dict) -> Path:
@@ -60,5 +50,5 @@ def download_ckpts(ckpts: Dict) -> Path:
 def install() -> Path:
     pretty.install()
     traceback.install()
-    install_libs(libs)
+    update_path()
     return download_ckpts(ckpts)
