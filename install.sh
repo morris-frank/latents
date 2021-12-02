@@ -17,9 +17,9 @@ fi
 conda create -n $env_name python="${python_version}" -y
 conda activate $env_name
 
+conda install -y pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch -c nvidia
+
 conda install mamba -c conda-forge -y
-mamba install pytorch"=1.8.1" torchvision cudatoolkit=10.2 -c pytorch -c conda-forge -y
-mamba install https://conda.anaconda.org/pytorch/linux-64/pytorch-1.8.1-py3.8_cuda10.2_cudnn7.6.5_0.tar.bz2 -y
 
 pip install tensorflow h5py"==2.10.0"
 pip install torch torchvision torchaudio
